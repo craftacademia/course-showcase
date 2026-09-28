@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Course Library — CRAFT Academia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --navy:    #1B3A5C;
+  --navy-lt: #24507D;
+  --amber:   #F5A623;
+  --green:   #16A34A;
+  --red:     #DC2626;
+  --bg:      #EEF2F7;
+  --surface: #FFFFFF;
+  --border:  #D1DCE8;
+  --text:    #0F172A;
+  --muted:   #5C7A9B;
+  --small:   #8098B3;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--navy); padding: 0 28px; height: 56px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; z-index: 20; }
+.hlogo { width: 30px; height: 30px; background: var(--amber); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--navy); }
+header h1 { font-size: 14px; font-weight: 600; color: #fff; }
+header span { font-size: 12px; color: rgba(255,255,255,.38); border-left: 1px solid rgba(255,255,255,.12); padding-left: 10px; margin-left: 4px; }
+.tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; gap: 0; }
+.tab-btn { padding: 14px 20px; font-size: 13px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 6px; }
+.tab-btn:hover { color: var(--navy); }
+.tab-btn.active { color: var(--navy); border-bottom-color: var(--amber); }
+.tab-badge { background: var(--bg); border: 1px solid var(--border); border-radius: 99px; padding: 1px 7px; font-size: 11px; font-weight: 600; color: var(--small); }
+.panel { display: none; flex: 1; flex-direction: column; }
+.panel.active { display: flex; }
+.panel-inner { max-width: 1100px; width: 100%; margin: 0 auto; padding: 28px 28px 64px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+.ph { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ph-title { font-size: 18px; font-weight: 700; color: var(--navy); }
+.ph-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s; flex-shrink: 0; }
+.btn:active { transform: scale(.97); }
+.btn-primary  { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-lt); }
+.btn-amber    { background: var(--amber); color: var(--navy); }
+.btn-amber:hover { background: #E09614; }
+.btn-ghost    { background: transparent; color: var(--navy); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.btn-danger-sm { background: #FEF2F2; color: var(--red); border: none; }
+.btn-danger-sm:hover { background: #FEE2E2; }
+.sel-bar { display: none; background: var(--navy); border-radius: 10px; padding: 12px 18px; align-items: center; justify-content: space-between; gap: 12px; }
+.sel-bar.visible { display: flex; }
+.sel-info { font-size: 13px; font-weight: 600; color: #fff; }
+.sel-actions { display: flex; gap: 8px; align-items: center; }
+.sel-clear { background: rgba(255,255,255,.12); color: rgba(255,255,255,.7); border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer; }
+.sel-clear:hover { background: rgba(255,255,255,.2); }
+.card-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+thead tr { border-bottom: 1px solid var(--border); background: #FAFBFC; }
+th { padding: 10px 14px; font-size: 11px; font-weight: 700; color: var(--small); text-transform: uppercase; letter-spacing: .06em; text-align: left; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #F1F5F9; transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #FAFCFF; }
+td { padding: 12px 14px; font-size: 13px; vertical-align: middle; }
+.td-check input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--navy); }
+.td-title { font-weight: 600; color: var(--navy); }
+.td-title small { display: block; font-size: 11px; font-weight: 400; color: var(--small); margin-top: 2px; }
+.td-nowrap { white-space: nowrap; color: var(--muted); }
+.td-actions { white-space: nowrap; }
+.cat { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+.cat-sales  { background: #EEF4FF; color: #1B3A5C; }
+.cat-credit { background: #ECFDF5; color: #065F46; }
+.cat-collections { background: #FFFBEB; color: #92400E; }
+.cat-compliance  { background: #F5F3FF; color: #5B21B6; }
+.cat-soft        { background: #ECFEFF; color: #0E7490; }
+.cat-managers    { background: #FDF2F8; color: #9D174D; }
+.cat-vedic       { background: #FEF3C7; color: #78350F; }
+.cat-general     { background: #F9FAFB; color: #374151; border: 1px solid #E5E7EB; }
+.status { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 99px; padding: 3px 10px; }
+.status-active  { background: #DCFCE7; color: #15803D; }
+.status-expired { background: #FEF2F2; color: var(--red); }
+.empty { padding: 52px 24px; text-align: center; }
+.empty svg { margin: 0 auto 12px; display: block; }
+.empty p { font-size: 14px; color: var(--muted); }
+.empty small { font-size: 12px; color: var(--small); margin-top: 4px; display: block; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+.overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 14px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); display: flex; flex-direction: column; max-height: 90vh; }
+.modal-sm { max-width: 480px; }
+.modal-md { max-width: 580px; }
+.modal-lg { max-width: 720px; }
+.modal-hd { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.modal-hd h3 { font-size: 16px; font-weight: 700; color: var(--navy); }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--small); padding: 4px; border-radius: 4px; font-size: 18px; line-height: 1; }
+.modal-close:hover { color: var(--text); background: var(--bg); }
+.modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.modal-ft { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.field input, .field select, .field textarea { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--surface); transition: border-color .15s; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--navy); }
+.field textarea { resize: vertical; min-height: 72px; }
+.field-hint { font-size: 11px; color: var(--small); margin-top: 2px; }
+#dropzone { border: 2px dashed var(--border); border-radius: 10px; padding: 36px 20px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; position: relative; }
+#dropzone:hover, #dropzone.drag { border-color: var(--navy-lt); background: #F0F6FF; }
+#dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+#dropzone .dz-icon { width: 44px; height: 44px; background: var(--bg); border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; }
+#dropzone h4 { font-size: 14px; font-weight: 600; color: var(--navy); }
+#dropzone p  { font-size: 12px; color: var(--muted); margin-top: 4px; }
+#dz-filename { margin-top: 10px; font-size: 12px; font-weight: 500; color: var(--green); }
+.up-prog { display: none; flex-direction: column; gap: 8px; }
+.up-prog.visible { display: flex; }
+.up-info { display: flex; justify-content: space-between; }
+.up-name { font-size: 13px; font-weight: 500; color: var(--navy); }
+.up-pct  { font-size: 13px; font-weight: 600; color: var(--navy); }
+.up-track { height: 5px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.up-bar   { height: 100%; background: var(--amber); border-radius: 99px; transition: width .2s; width: 0; }
+.up-sub   { font-size: 11px; color: var(--small); }
+.err-banner { display: none; padding: 10px 14px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; font-size: 13px; color: var(--red); }
+.err-banner.visible { display: block; }
+.picker-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-height: 280px; overflow-y: auto; }
+.picker-row { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #F1F5F9; cursor: pointer; transition: background .1s; }
+.picker-row:last-child { border-bottom: none; }
+.picker-row:hover { background: #FAFCFF; }
+.picker-row input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--navy); flex-shrink: 0; cursor: pointer; }
+.picker-info { flex: 1; min-width: 0; }
+.picker-title { font-size: 13px; font-weight: 600; color: var(--navy); }
+.picker-meta  { font-size: 11px; color: var(--small); margin-top: 1px; }
+.picker-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--muted); }
+.link-result-box { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 12px; word-break: break-all; color: var(--navy); line-height: 1.5; }
+.link-result-note { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.coll-link { font-family: 'Courier New', monospace; font-size: 11px; color: var(--navy-lt); text-decoration: none; }
+.coll-link:hover { text-decoration: underline; }
+@media (max-width: 700px) {
+  .panel-inner { padding: 20px 16px 48px; }
+  .form-row { grid-template-columns: 1fr; }
+  th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="hlogo">CA</div>
+  <h1>CRAFT Academia</h1>
+  <span>Course Library & Collections</span>
+</header>
+<div class="tabs">
+  <button class="tab-btn active" id="tab-lib" onclick="switchTab('lib')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Course Library
+    <span class="tab-badge" id="lib-count">0</span>
+  </button>
+  <button class="tab-btn" id="tab-col" onclick="switchTab('col')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Collections
+    <span class="tab-badge" id="col-count">0</span>
+  </button>
+</div>
+<div class="panel active" id="panel-lib">
+  <div class="panel-inner">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Course Library</div>
+        <div class="ph-sub">All uploaded SCORM courses. Select one or more to build a client collection.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openUploadModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Upload Course
+      </button>
+    </div>
+    <div class="sel-bar" id="sel-bar">
+      <span class="sel-info" id="sel-info">0 courses selected</span>
+      <div class="sel-actions">
+        <button class="sel-clear" onclick="clearSelection()">Clear</button>
+        <button class="btn btn-amber btn-sm" onclick="openCollectionModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Create Collection
+        </button>
+      </div>
+    </div>
+    <div class="card-wrap" id="lib-wrap">
+      <div class="empty" id="lib-empty">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8D9EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <p>No courses yet</p>
+        <small>Upload your first SCORM course to get started</small>
+      </div>
+      <table id="lib-table" style="display:none">
+        <thead>
+          <tr>
+            <th style="width:38px"><input type="checkbox" id="chk-all" onchange="toggleSelectAll(this)"/></th>
+            <th>Course</th>
+            <th>Category</th>
+            <th>Language</th>
+            <th>Duration</th>
+            <th>Uploaded</th>
+            <th style="width:100px"></th>
+          </tr>
+        </thead>
+        <tbody id="lib-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="panel" id="panel-col">
+  <div class="panel-inner">
+    <div class="ph">
+      <div>
+        <div class="ph-title">Collections</div>
+        <div class="ph-sub">Shareable course bundles for specific clients. Each link opens a branded catalogue page.</div>
+      </div>
+      <button class="btn btn-primary" onclick="openCollectionModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Collection
+      </button>
+    </div>
+    <div class="card-wrap" id="col-wrap">
+      <div class="empty" id="col-empty">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#C8D9EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        <p>No collections yet</p>
+        <small>Go to the Course Library, select courses, and create a collection</small>
+      </div>
+      <table id="col-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Client / Label</th>
+            <th>Courses</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th>Link</th>
+            <th style="width:80px"></th>
+          </tr>
+        </thead>
+        <tbody id="col-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="m-upload">
+  <div class="modal modal-md">
+    <div class="modal-hd">
+      <h3>Upload SCORM Course</h3>
+      <button class="modal-close" onclick="closeModal('m-upload')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="dropzone">
+        <input type="file" accept=".zip" id="dz-input"/>
+        <div class="dz-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5C7A9B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        </div>
+        <h4>Drop SCORM .zip here</h4>
+        <p>or click to browse · Max 500 MB</p>
+        <div id="dz-filename"></div>
+      </div>
+      <div class="up-prog" id="up-prog">
+        <div class="up-info"><span class="up-name" id="up-name">—</span><span class="up-pct" id="up-pct">0%</span></div>
+        <div class="up-track"><div class="up-bar" id="up-bar"></div></div>
+        <div class="up-sub" id="up-sub">Uploading…</div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Category</label>
+          <select id="up-cat">
+            <option>Sales</option><option>Credit</option><option>Collections</option>
+            <option>Compliance</option><option>Soft Skills</option>
+            <option>1st Time Managers</option><option>Vedic Wisdom</option><option>General</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Language</label>
+          <select id="up-lang">
+            <option>English</option><option>Hindi</option><option>Marathi</option>
+            <option>Bengali</option><option>Telugu</option><option>Tamil</option>
+            <option>Kannada</option><option>Gujarati</option><option>Odia</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Duration (minutes) — optional</label>
+        <input type="number" id="up-dur" placeholder="e.g. 20" min="0" max="999"/>
+      </div>
+      <div class="err-banner" id="up-err"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('m-upload')">Cancel</button>
+      <button class="btn btn-primary" id="up-submit-btn" onclick="submitUpload()">Upload Course</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="m-edit">
+  <div class="modal modal-md">
+    <div class="modal-hd">
+      <h3>Edit Course Details</h3>
+      <button class="modal-close" onclick="closeModal('m-edit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" id="edit-title" placeholder="Course title shown to clients"/>
+      </div>
+      <div class="field">
+        <label>Description — shown on client catalogue page</label>
+        <textarea id="edit-desc" placeholder="Brief description of what this course covers…"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Category</label>
+          <select id="edit-cat">
+            <option>Sales</option><option>Credit</option><option>Collections</option>
+            <option>Compliance</option><option>Soft Skills</option>
+            <option>1st Time Managers</option><option>Vedic Wisdom</option><option>General</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Language</label>
+          <select id="edit-lang">
+            <option>English</option><option>Hindi</option><option>Marathi</option>
+            <option>Bengali</option><option>Telugu</option><option>Tamil</option>
+            <option>Kannada</option><option>Gujarati</option><option>Odia</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Duration (minutes)</label>
+        <input type="number" id="edit-dur" min="0" max="999"/>
+      </div>
+      <div class="err-banner" id="edit-err"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('m-edit')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="m-col">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <h3>Create Collection</h3>
+      <button class="modal-close" onclick="closeModal('m-col')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Client Name / Label <span style="color:#DC2626">*</span></label>
+        <input type="text" id="col-client" placeholder="e.g. Fedfina — Collections Team"/>
+      </div>
+      <div class="field">
+        <label>Custom Note to Client — optional</label>
+        <textarea id="col-note" placeholder="e.g. As discussed, here are the courses curated for your collections team."></textarea>
+      </div>
+      <div class="field">
+        <label>Link Expires On <span style="color:#DC2626">*</span></label>
+        <input type="date" id="col-expiry"/>
+        <span class="field-hint">After this date, the client's link will stop working.</span>
+      </div>
+      <div class="field">
+        <label>Select Courses <span style="color:#DC2626">*</span></label>
+        <div class="picker-wrap" id="col-picker">
+          <div class="picker-empty">Loading courses…</div>
+        </div>
+      </div>
+      <div class="err-banner" id="col-err"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('m-col')">Cancel</button>
+      <button class="btn btn-primary" id="col-submit-btn" onclick="submitCollection()">Create & Get Link</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="m-link">
+  <div class="modal modal-sm">
+    <div class="modal-hd">
+      <h3>✓ Collection Created</h3>
+      <button class="modal-close" onclick="closeModal('m-link')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted)">Share this link with your client.</p>
+      <div class="link-result-box" id="link-result-url">—</div>
+      <div class="link-result-note">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="link-result-expiry">—</span>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('m-link')">Close</button>
+      <button class="btn btn-primary" id="copy-result-btn" onclick="copyResultLink()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Link
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+const S = { courses: [], selectedIds: new Set(), currentEditId: null, currentLink: '', currentFile: null };
+async function init() {
+  const d = new Date(); d.setDate(d.getDate() + 30);
+  document.getElementById('col-expiry').value = d.toISOString().slice(0, 10);
+  document.getElementById('col-expiry').min   = new Date().toISOString().slice(0, 10);
+  await Promise.all([loadLibrary(), loadCollections()]);
+}
+function switchTab(tab) {
+  ['lib','col'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'col') loadCollections();
+}
+async function loadLibrary() {
+  try { const r = await fetch('/api/library'); const d = await r.json(); S.courses = d.courses || []; renderLibrary(); } catch (e) { console.error(e); }
+}
+function renderLibrary() {
+  const count = S.courses.length;
+  document.getElementById('lib-count').textContent = count;
+  document.getElementById('lib-empty').style.display = count ? 'none' : '';
+  document.getElementById('lib-table').style.display = count ? '' : 'none';
+  if (!count) return;
+  document.getElementById('lib-tbody').innerHTML = S.courses.map(c => `
+    <tr>
+      <td class="td-check"><input type="checkbox" data-id="${c.courseId}" ${S.selectedIds.has(c.courseId) ? 'checked' : ''} onchange="toggleCourse('${c.courseId}', this)"/></td>
+      <td class="td-title">${esc(c.title)}<small>${esc(c.originalName)}</small></td>
+      <td><span class="cat ${catClass(c.category)}">${esc(c.category)}</span></td>
+      <td class="td-nowrap">${esc(c.language)}</td>
+      <td class="td-nowrap">${c.durationMins > 0 ? c.durationMins + ' min' : '—'}</td>
+      <td class="td-nowrap">${fmtDate(c.uploadedAt)}</td>
+      <td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.courseId}')">Edit</button>
+        <button class="btn btn-danger-sm btn-sm" onclick="deleteCourse('${c.courseId}')">Del</button>
+      </td>
+    </tr>`).join('');
+  updateSelectAllState();
+}
+async function loadCollections() {
+  try { const r = await fetch('/api/collections'); const d = await r.json(); renderCollections(d.collections || []); } catch (e) { console.error(e); }
+}
+function renderCollections(cols) {
+  document.getElementById('col-count').textContent = cols.length;
+  document.getElementById('col-empty').style.display = cols.length ? 'none' : '';
+  document.getElementById('col-table').style.display = cols.length ? '' : 'none';
+  if (!cols.length) return;
+  const now = Date.now();
+  document.getElementById('col-tbody').innerHTML = cols.map(c => {
+    const exp = now > c.expiresAt;
+    const days = Math.ceil((c.expiresAt - now) / 86400000);
+    const expLbl = exp ? 'Expired' : (days === 1 ? '1 day left' : `${days}d left`);
+    const shortL = c.link.length > 55 ? c.link.slice(0, 53) + '…' : c.link;
+    return `<tr>
+      <td class="td-title">${esc(c.clientName)}<small>Created ${fmtDate(c.createdAt)}</small></td>
+      <td class="td-nowrap">${c.courseIds.length} course${c.courseIds.length !== 1 ? 's' : ''}</td>
+      <td class="td-nowrap">${fmtDate(c.expiresAt)}</td>
+      <td><span class="status ${exp ? 'status-expired' : 'status-active'}">${exp ? 'Expired' : 'Active'} · ${expLbl}</span></td>
+      <td><a class="coll-link" href="${esc(c.link)}" target="_blank" rel="noopener">${esc(shortL)}</a></td>
+      <td class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="copyLink('${esc(c.link)}', this)">Copy</button>
+        <button class="btn btn-danger-sm btn-sm" onclick="deleteCollection('${c.collectionId}')">Del</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function toggleCourse(id, cb) { cb.checked ? S.selectedIds.add(id) : S.selectedIds.delete(id); updateSelectionBar(); updateSelectAllState(); }
+function toggleSelectAll(cb) { S.selectedIds.clear(); if (cb.checked) S.courses.forEach(c => S.selectedIds.add(c.courseId)); renderLibrary(); updateSelectionBar(); }
+function updateSelectAllState() { const cb = document.getElementById('chk-all'); if (!cb) return; cb.indeterminate = S.selectedIds.size > 0 && S.selectedIds.size < S.courses.length; cb.checked = S.courses.length > 0 && S.selectedIds.size === S.courses.length; }
+function updateSelectionBar() { const bar = document.getElementById('sel-bar'); const n = S.selectedIds.size; if (n > 0) { bar.classList.add('visible'); document.getElementById('sel-info').textContent = `${n} course${n !== 1 ? 's' : ''} selected`; } else { bar.classList.remove('visible'); } }
+function clearSelection() { S.selectedIds.clear(); renderLibrary(); updateSelectionBar(); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => { o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }); });
+function openUploadModal() { S.currentFile = null; document.getElementById('dz-filename').textContent = ''; document.getElementById('dz-input').value = ''; document.getElementById('up-prog').classList.remove('visible'); document.getElementById('up-err').classList.remove('visible'); document.getElementById('up-submit-btn').disabled = false; openModal('m-upload'); }
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('dz-input');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) setUploadFile(f); });
+fi.addEventListener('change', e => { if (e.target.files[0]) setUploadFile(e.target.files[0]); });
+function setUploadFile(f) { if (!f.name.toLowerCase().endsWith('.zip')) { showErr('up-err', 'Only .zip files are accepted'); return; } S.currentFile = f; document.getElementById('dz-filename').textContent = `✓  ${f.name}  (${fmtSize(f.size)})`; document.getElementById('dz-filename').style.color = 'var(--green)'; }
+async function submitUpload() {
+  if (!S.currentFile) { showErr('up-err', 'Please select a SCORM .zip file first'); return; }
+  const btn = document.getElementById('up-submit-btn'); btn.disabled = true; hideErr('up-err');
+  const fd = new FormData(); fd.append('scorm', S.currentFile); fd.append('category', document.getElementById('up-cat').value); fd.append('language', document.getElementById('up-lang').value); fd.append('durationMins', document.getElementById('up-dur').value || '0');
+  const prog = document.getElementById('up-prog'); prog.classList.add('visible'); document.getElementById('up-name').textContent = S.currentFile.name;
+  const xhr = new XMLHttpRequest();
+  xhr.upload.addEventListener('progress', e => { if (!e.lengthComputable) return; const pct = Math.min(Math.round(e.loaded / e.total * 90), 90); document.getElementById('up-bar').style.width = pct + '%'; document.getElementById('up-pct').textContent = pct + '%'; document.getElementById('up-sub').textContent = `${fmtSize(e.loaded)} of ${fmtSize(e.total)}`; });
+  xhr.addEventListener('load', async () => { if (xhr.status === 200) { document.getElementById('up-bar').style.width = '100%'; document.getElementById('up-pct').textContent = '100%'; document.getElementById('up-sub').textContent = 'Done ✓'; await loadLibrary(); setTimeout(() => closeModal('m-upload'), 600); } else { let msg = 'Upload failed'; try { msg = JSON.parse(xhr.responseText).error || msg; } catch (_) {} showErr('up-err', msg); prog.classList.remove('visible'); btn.disabled = false; } });
+  xhr.addEventListener('error', () => { showErr('up-err', 'Network error'); prog.classList.remove('visible'); btn.disabled = false; });
+  xhr.open('POST', '/api/library'); xhr.send(fd);
+}
+function openEditModal(courseId) { const c = S.courses.find(x => x.courseId === courseId); if (!c) return; S.currentEditId = courseId; document.getElementById('edit-id').value = courseId; document.getElementById('edit-title').value = c.title; document.getElementById('edit-desc').value = c.description || ''; document.getElementById('edit-dur').value = c.durationMins || ''; setSelectValue('edit-cat', c.category); setSelectValue('edit-lang', c.language); hideErr('edit-err'); openModal('m-edit'); }
+async function submitEdit() { const id = document.getElementById('edit-id').value; const title = document.getElementById('edit-title').value.trim(); if (!title) { showErr('edit-err', 'Title is required'); return; } try { const r = await fetch(`/api/library/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, description: document.getElementById('edit-desc').value.trim(), category: document.getElementById('edit-cat').value, language: document.getElementById('edit-lang').value, durationMins: parseInt(document.getElementById('edit-dur').value || '0', 10) || 0 }) }); if (!r.ok) throw new Error((await r.json()).error || 'Save failed'); await loadLibrary(); closeModal('m-edit'); } catch (e) { showErr('edit-err', e.message); } }
+async function deleteCourse(courseId) { const c = S.courses.find(x => x.courseId === courseId); if (!confirm(`Delete "${c?.title || 'this course'}" from the library?\n\nThis cannot be undone.`)) return; try { await fetch(`/api/library/${courseId}`, { method: 'DELETE' }); S.selectedIds.delete(courseId); await loadLibrary(); updateSelectionBar(); } catch (e) { alert('Delete failed: ' + e.message); } }
+function openCollectionModal() { hideErr('col-err'); document.getElementById('col-client').value = ''; document.getElementById('col-note').value = ''; const d = new Date(); d.setDate(d.getDate() + 30); document.getElementById('col-expiry').value = d.toISOString().slice(0, 10); renderCoursePicker(); openModal('m-col'); }
+function renderCoursePicker() { const picker = document.getElementById('col-picker'); if (!S.courses.length) { picker.innerHTML = '<div class="picker-empty">No courses in library yet. Upload courses first.</div>'; return; } picker.innerHTML = S.courses.map(c => `<label class="picker-row"><input type="checkbox" name="picker-course" value="${c.courseId}" ${S.selectedIds.has(c.courseId) ? 'checked' : ''}/><div class="picker-info"><div class="picker-title">${esc(c.title)}</div><div class="picker-meta">${esc(c.category)} · ${esc(c.language)}${c.durationMins > 0 ? ' · ' + c.durationMins + ' min' : ''}</div></div></label>`).join(''); }
+async function submitCollection() {
+  const clientName = document.getElementById('col-client').value.trim(); const note = document.getElementById('col-note').value.trim(); const expiresAt = document.getElementById('col-expiry').value; const checkedIds = [...document.querySelectorAll('#col-picker input[type="checkbox"]:checked')].map(cb => cb.value);
+  if (!clientName) { showErr('col-err', 'Client name is required'); return; } if (!checkedIds.length) { showErr('col-err', 'Select at least one course'); return; } if (!expiresAt) { showErr('col-err', 'Expiry date is required'); return; }
+  const btn = document.getElementById('col-submit-btn'); btn.disabled = true; btn.textContent = 'Creating…';
+  try { const r = await fetch('/api/collections', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientName, note, courseIds: checkedIds, expiresAt }) }); const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Failed'); closeModal('m-col'); await loadCollections(); const link = `${location.origin}/c/${d.collection.collectionId}`; S.currentLink = link; document.getElementById('link-result-url').textContent = link; document.getElementById('link-result-expiry').textContent = `Expires on ${fmtDate(d.collection.expiresAt)}`; document.getElementById('copy-result-btn').textContent = 'Copy Link'; document.getElementById('copy-result-btn').style.background = ''; openModal('m-link'); clearSelection(); } catch (e) { showErr('col-err', e.message); } finally { btn.disabled = false; btn.textContent = 'Create & Get Link'; }
+}
+async function deleteCollection(id) { if (!confirm('Delete this collection link?')) return; try { await fetch(`/api/collections/${id}`, { method: 'DELETE' }); loadCollections(); } catch (e) { alert('Delete failed'); } }
+function copyResultLink() { navigator.clipboard.writeText(S.currentLink).then(() => { const btn = document.getElementById('copy-result-btn'); btn.textContent = '✓ Copied!'; btn.style.background = 'var(--green)'; setTimeout(() => { btn.textContent = 'Copy Link'; btn.style.background = ''; }, 2500); }); }
+function copyLink(link, btn) { navigator.clipboard.writeText(link).then(() => { const orig = btn.textContent; btn.textContent = '✓'; setTimeout(() => btn.textContent = orig, 2000); }); }
+function catClass(cat) { const map = {'Sales':'cat-sales','Credit':'cat-credit','Collections':'cat-collections','Compliance':'cat-compliance','Soft Skills':'cat-soft','1st Time Managers':'cat-managers','Vedic Wisdom':'cat-vedic','General':'cat-general'}; return map[cat] || 'cat-general'; }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+function fmtSize(b) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b/1024).toFixed(1) + ' KB'; return (b/1048576).toFixed(1) + ' MB'; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function setSelectValue(id, val) { const el = document.getElementById(id); if (!el) return; for (const o of el.options) { if (o.value === val) { el.value = val; return; } } }
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = '⚠ ' + msg; e.classList.add('visible'); }
+function hideErr(id) { document.getElementById(id).classList.remove('visible'); }
+init();
+</script>
+</body>
+</html>
