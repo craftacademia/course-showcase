@@ -1,18 +1,5 @@
 /**
  * CRAFT Academia — SCORM Course Library & Collection Link Generator v2
- *
- * Endpoints:
- *   POST   /api/library              Upload SCORM zip → stored permanently
- *   GET    /api/library              List all library courses
- *   PATCH  /api/library/:id          Update course metadata
- *   DELETE /api/library/:id          Delete course
- *
- *   POST   /api/collections          Create a client collection
- *   GET    /api/collections          List all collections
- *   DELETE /api/collections/:id      Delete a collection
- *
- *   GET    /course/:id/*             Serve SCORM files (for Launch)
- *   GET    /c/:id                    Client-facing collection page (public)
  */
 
 const express   = require('express');
@@ -27,7 +14,6 @@ const app     = express();
 const PORT    = process.env.PORT || 3000;
 const BASE_URL = (process.env.BASE_URL || '').replace(/\/$/, '');
 
-// ─── Directories ─────────────────────────────────────────────────────────────
 const DATA_DIR    = path.join(__dirname, 'data');
 const LIBRARY_DIR = path.join(DATA_DIR, 'library');
 const COLL_DIR    = path.join(DATA_DIR, 'collections');
@@ -37,7 +23,6 @@ const TMP_DIR     = path.join(DATA_DIR, 'tmp');
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
 });
 
-// ─── Multer ───────────────────────────────────────────────────────────────────
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, TMP_DIR),
@@ -51,7 +36,6 @@ const upload = multer({
   }
 });
 
-// ─── SCORM manifest parser ────────────────────────────────────────────────────
 async function parseManifest(manifestPath) {
   if (!fs.existsSync(manifestPath)) return null;
   try {
@@ -59,13 +43,10 @@ async function parseManifest(manifestPath) {
     const result = await xml2js.parseStringPromise(xml, { explicitArray: true });
     const mf     = result?.manifest;
     if (!mf) return null;
-
     let courseTitle = '';
     try { courseTitle = mf.organizations?.[0]?.organization?.[0]?.title?.[0] || ''; } catch (_) {}
-
     const resources = mf.resources?.[0]?.resource || [];
     let launchFile  = null;
-
     for (const res of resources) {
       const a  = res.$ || {};
       const st = (a['adlcp:scormtype'] || a['adlcp:scormType'] || '').toLowerCase();
@@ -87,7 +68,6 @@ async function parseManifest(manifestPath) {
 async function resolveManifest(extractDir) {
   let manifestPath = path.join(extractDir, 'imsmanifest.xml');
   let contentRoot  = extractDir;
-
   if (!fs.existsSync(manifestPath)) {
     for (const entry of fs.readdirSync(extractDir).filter(e => !e.startsWith('.'))) {
       const sub = path.join(extractDir, entry);
@@ -97,9 +77,7 @@ async function resolveManifest(extractDir) {
       }
     }
   }
-
   const parsed = await parseManifest(manifestPath);
-
   if (contentRoot !== extractDir) {
     for (const item of fs.readdirSync(contentRoot)) {
       fs.renameSync(path.join(contentRoot, item), path.join(extractDir, item));
@@ -109,7 +87,6 @@ async function resolveManifest(extractDir) {
   return parsed;
 }
 
-// ─── Data helpers ─────────────────────────────────────────────────────────────
 function getBase(req) {
   return BASE_URL || `${req.protocol}://${req.get('host')}`;
 }
@@ -147,25 +124,18 @@ function readAllCollections() {
 
 function isUUID(s) { return /^[0-9a-f-]{36}$/.test(s); }
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-app.set('trust proxy', 1); // Required for correct https:// links behind Railway's proxy
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Health check — Railway uses this to confirm the app is running
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// ─── Library: Upload ──────────────────────────────────────────────────────────
 app.post('/api/library', upload.single('scorm'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
   const courseId  = uuidv4();
   const courseDir = path.join(LIBRARY_DIR, courseId);
   const zipPath   = req.file.path;
-
   try {
     fs.mkdirSync(courseDir, { recursive: true });
-
     await new Promise((resolve, reject) => {
       fs.createReadStream(zipPath)
         .pipe(unzipper.Extract({ path: courseDir }))
@@ -173,11 +143,9 @@ app.post('/api/library', upload.single('scorm'), async (req, res) => {
         .on('error', reject);
     });
     fs.unlinkSync(zipPath);
-
     const parsed    = await resolveManifest(courseDir);
     let launchFile  = parsed?.launchFile || 'index.html';
     let courseTitle = parsed?.courseTitle || req.file.originalname.replace(/\.zip$/i, '');
-
     if (!fs.existsSync(path.join(courseDir, launchFile))) {
       if (fs.existsSync(path.join(courseDir, 'index.html'))) {
         launchFile = 'index.html';
@@ -185,7 +153,6 @@ app.post('/api/library', upload.single('scorm'), async (req, res) => {
         throw new Error('Cannot find a launch file. Check the SCORM package has imsmanifest.xml or index.html at its root.');
       }
     }
-
     const meta = {
       courseId,
       title:       courseTitle,
@@ -198,9 +165,7 @@ app.post('/api/library', upload.single('scorm'), async (req, res) => {
       uploadedAt:  Date.now()
     };
     fs.writeFileSync(path.join(courseDir, '.meta.json'), JSON.stringify(meta, null, 2));
-
     res.json({ success: true, course: meta });
-
   } catch (err) {
     console.error('Upload error:', err.message);
     if (fs.existsSync(zipPath))   try { fs.unlinkSync(zipPath); } catch (_) {}
@@ -209,19 +174,15 @@ app.post('/api/library', upload.single('scorm'), async (req, res) => {
   }
 });
 
-// ─── Library: List ────────────────────────────────────────────────────────────
 app.get('/api/library', (_req, res) => {
   res.json({ courses: readAllCourses() });
 });
 
-// ─── Library: Update metadata ─────────────────────────────────────────────────
 app.patch('/api/library/:courseId', (req, res) => {
   const { courseId } = req.params;
   if (!isUUID(courseId)) return res.status(400).json({ error: 'Invalid ID' });
-
   const metaPath = path.join(LIBRARY_DIR, courseId, '.meta.json');
   if (!fs.existsSync(metaPath)) return res.status(404).json({ error: 'Course not found' });
-
   const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
   for (const key of ['title', 'description', 'category', 'language', 'durationMins']) {
     if (req.body[key] !== undefined) meta[key] = req.body[key];
@@ -230,11 +191,9 @@ app.patch('/api/library/:courseId', (req, res) => {
   res.json({ success: true, course: meta });
 });
 
-// ─── Library: Delete ──────────────────────────────────────────────────────────
 app.delete('/api/library/:courseId', (req, res) => {
   const { courseId } = req.params;
   if (!isUUID(courseId)) return res.status(400).json({ error: 'Invalid ID' });
-
   const dir = path.join(LIBRARY_DIR, courseId);
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -244,23 +203,18 @@ app.delete('/api/library/:courseId', (req, res) => {
   }
 });
 
-// ─── Collections: Create ──────────────────────────────────────────────────────
 app.post('/api/collections', (req, res) => {
   const { clientName, courseIds, expiresAt, note } = req.body;
-
   if (!clientName?.trim())   return res.status(400).json({ error: 'Client name is required' });
   if (!courseIds?.length)    return res.status(400).json({ error: 'Select at least one course' });
   if (!expiresAt)            return res.status(400).json({ error: 'Expiry date is required' });
-
   const expTs = new Date(expiresAt).getTime();
   if (isNaN(expTs) || expTs <= Date.now()) {
     return res.status(400).json({ error: 'Expiry date must be in the future' });
   }
-
   for (const id of courseIds) {
     if (!readMeta(id)) return res.status(400).json({ error: `Course not found: ${id}` });
   }
-
   const collectionId = uuidv4();
   const collection   = {
     collectionId,
@@ -277,7 +231,6 @@ app.post('/api/collections', (req, res) => {
   res.json({ success: true, collection });
 });
 
-// ─── Collections: List ────────────────────────────────────────────────────────
 app.get('/api/collections', (req, res) => {
   const base = getBase(req);
   const now  = Date.now();
@@ -289,11 +242,9 @@ app.get('/api/collections', (req, res) => {
   res.json({ collections: colls });
 });
 
-// ─── Collections: Delete ──────────────────────────────────────────────────────
 app.delete('/api/collections/:collectionId', (req, res) => {
   const { collectionId } = req.params;
   if (!isUUID(collectionId)) return res.status(400).json({ error: 'Invalid ID' });
-
   const f = path.join(COLL_DIR, `${collectionId}.json`);
   if (fs.existsSync(f)) {
     fs.unlinkSync(f);
@@ -303,14 +254,11 @@ app.delete('/api/collections/:collectionId', (req, res) => {
   }
 });
 
-// ─── Serve SCORM course files ─────────────────────────────────────────────────
 app.get('/course/:courseId/*', (req, res) => {
   const { courseId } = req.params;
   if (!isUUID(courseId)) return res.status(400).send('Invalid ID');
-
   const courseDir = path.join(LIBRARY_DIR, courseId);
   if (!fs.existsSync(courseDir)) return res.status(404).send('Course not found');
-
   const filePath = req.params[0];
   const fullPath = path.resolve(path.join(courseDir, filePath));
   if (!fullPath.startsWith(path.resolve(courseDir))) return res.status(403).send('Forbidden');
@@ -320,11 +268,9 @@ app.get('/course/:courseId/*', (req, res) => {
   res.sendFile(fullPath);
 });
 
-// ─── Client-facing collection page ────────────────────────────────────────────
 app.get('/c/:collectionId', (req, res) => {
   const { collectionId } = req.params;
   if (!isUUID(collectionId)) return res.status(400).send('Invalid link');
-
   const collection = readCollection(collectionId);
   if (!collection) {
     return res.status(404).send(errorPage('Link Not Found', 'This collection link does not exist or has been removed.'));
@@ -333,20 +279,14 @@ app.get('/c/:collectionId', (req, res) => {
     const expDate = fmtDate(collection.expiresAt);
     return res.status(410).send(errorPage('Access Expired', `This course collection link expired on ${expDate}.`));
   }
-
-  const courses = collection.courseIds
-    .map(id => readMeta(id))
-    .filter(Boolean);
-
+  const courses = collection.courseIds.map(id => readMeta(id)).filter(Boolean);
   const base    = getBase(req);
   const expDate = fmtDate(collection.expiresAt);
   res.send(collectionPage(collection, courses, base, expDate));
 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function esc(s) {
-  return String(s || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function fmtDate(ts) {
@@ -360,11 +300,10 @@ function errorPage(title, msg) {
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#F0F4F8;display:flex;align-items:center;justify-content:center;min-height:100vh}
 .c{background:#fff;border-radius:14px;padding:44px 52px;text-align:center;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
 h2{color:#1B3A5C;margin-bottom:10px;font-size:22px}p{color:#64748B;line-height:1.6}
-.logo{width:48px;height:48px;background:#F5A623;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#1B3A5C;margin:0 auto 20px}</style></head>
-<body><div class="c"><div class="logo">CA</div><h2>${esc(title)}</h2><p>${esc(msg)}</p></div></body></html>`;
+.logo{margin:0 auto 20px;display:block;height:48px}</style></head>
+<body><div class="c"><img src="/Craft.png" alt="CRAFT Academia" class="logo"/><h2>${esc(title)}</h2><p>${esc(msg)}</p></div></body></html>`;
 }
 
-// ─── Client collection page renderer ─────────────────────────────────────────
 const CAT_COLORS = {
   'Sales':             { bg: '#1B3A5C', badge: '#EEF4FF', badgeTxt: '#1B3A5C', init: 'S'  },
   'Credit':            { bg: '#0D6B3C', badge: '#ECFDF5', badgeTxt: '#065F46', init: 'CR' },
@@ -414,9 +353,7 @@ function collectionPage(collection, courses, base, expDate) {
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;min-height:100vh;display:flex;flex-direction:column}
-header{background:#1B3A5C;padding:0 32px;height:64px;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.logo{width:36px;height:36px;background:#F5A623;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#1B3A5C;flex-shrink:0}
-header h1{font-size:16px;font-weight:600;color:#fff}
+header{background:#fff;padding:0 32px;height:72px;display:flex;align-items:center;border-bottom:1px solid #E2E8F0;flex-shrink:0}
 main{flex:1;max-width:1000px;width:100%;margin:0 auto;padding:40px 24px 64px}
 .ch{margin-bottom:32px}
 .cl{font-size:11px;font-weight:700;color:#8098B3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -442,7 +379,7 @@ footer strong{color:rgba(255,255,255,.65)}
 </style>
 </head>
 <body>
-<header><div class="logo">CA</div><h1>CRAFT Academia</h1></header>
+<header><img src="/Craft.png" alt="CRAFT Academia" style="height:44px"/></header>
 <main>
   <div class="ch">
     <div class="cl">Course Collection</div>
@@ -460,7 +397,6 @@ footer strong{color:rgba(255,255,255,.65)}
 </body></html>`;
 }
 
-// ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n✅  CRAFT Course Library running`);
   console.log(`    Local  → http://localhost:${PORT}`);
