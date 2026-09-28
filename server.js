@@ -150,7 +150,7 @@ app.post('/api/library', upload.single('scorm'), async (req, res) => {
       if (fs.existsSync(path.join(courseDir, 'index.html'))) {
         launchFile = 'index.html';
       } else {
-        throw new Error('Cannot find a launch file. Check the SCORM package has imsmanifest.xml or index.html at its root.');
+        throw new Error('Cannot find a launch file.');
       }
     }
     const meta = {
@@ -276,8 +276,7 @@ app.get('/c/:collectionId', (req, res) => {
     return res.status(404).send(errorPage('Link Not Found', 'This collection link does not exist or has been removed.'));
   }
   if (Date.now() > collection.expiresAt) {
-    const expDate = fmtDate(collection.expiresAt);
-    return res.status(410).send(errorPage('Access Expired', `This course collection link expired on ${expDate}.`));
+    return res.status(410).send(errorPage('Access Expired', `This course collection link expired on ${fmtDate(collection.expiresAt)}.`));
   }
   const courses = collection.courseIds.map(id => readMeta(id)).filter(Boolean);
   const base    = getBase(req);
@@ -299,20 +298,21 @@ function errorPage(title, msg) {
 <title>${esc(title)} — CRAFT Academia</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#F0F4F8;display:flex;align-items:center;justify-content:center;min-height:100vh}
 .c{background:#fff;border-radius:14px;padding:44px 52px;text-align:center;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-h2{color:#1B3A5C;margin-bottom:10px;font-size:22px}p{color:#64748B;line-height:1.6}
-.logo{margin:0 auto 20px;display:block;height:48px}</style></head>
-<body><div class="c"><img src="/Craft.png" alt="CRAFT Academia" class="logo"/><h2>${esc(title)}</h2><p>${esc(msg)}</p></div></body></html>`;
+.brand{margin-bottom:20px}.brand-main{font-size:22px;font-weight:800;color:#1B3A5C;letter-spacing:1px}.brand-sub{font-size:12px;font-weight:600;color:#F5A623;display:block;margin-top:2px}
+h2{color:#1B3A5C;margin-bottom:10px;font-size:22px}p{color:#64748B;line-height:1.6}</style></head>
+<body><div class="c"><div class="brand"><div class="brand-main">C.R.A.F.T</div><span class="brand-sub">Inspiring Transformation</span></div><h2>${esc(title)}</h2><p>${esc(msg)}</p></div></body></html>`;
 }
 
+// ─── Category config with placeholder images ──────────────────────────────────
 const CAT_COLORS = {
-  'Sales':             { bg: '#1B3A5C', badge: '#EEF4FF', badgeTxt: '#1B3A5C', init: 'S'  },
-  'Credit':            { bg: '#0D6B3C', badge: '#ECFDF5', badgeTxt: '#065F46', init: 'CR' },
-  'Collections':       { bg: '#B45309', badge: '#FFFBEB', badgeTxt: '#92400E', init: 'CO' },
-  'Compliance':        { bg: '#6D28D9', badge: '#F5F3FF', badgeTxt: '#5B21B6', init: 'CP' },
-  'Soft Skills':       { bg: '#0891B2', badge: '#ECFEFF', badgeTxt: '#0E7490', init: 'SS' },
-  '1st Time Managers': { bg: '#BE185D', badge: '#FDF2F8', badgeTxt: '#9D174D', init: 'M'  },
-  'Vedic Wisdom':      { bg: '#92400E', badge: '#FEF3C7', badgeTxt: '#78350F', init: 'V'  },
-  'General':           { bg: '#374151', badge: '#F9FAFB', badgeTxt: '#374151', init: 'G'  },
+  'Sales':             { bg: '#1B3A5C', badge: '#EEF4FF', badgeTxt: '#1B3A5C', init: 'S',  img: 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=480&h=160&fit=crop&q=80' },
+  'Credit':            { bg: '#0D6B3C', badge: '#ECFDF5', badgeTxt: '#065F46', init: 'CR', img: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=480&h=160&fit=crop&q=80' },
+  'Collections':       { bg: '#B45309', badge: '#FFFBEB', badgeTxt: '#92400E', init: 'CO', img: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=480&h=160&fit=crop&q=80' },
+  'Compliance':        { bg: '#6D28D9', badge: '#F5F3FF', badgeTxt: '#5B21B6', init: 'CP', img: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=480&h=160&fit=crop&q=80' },
+  'Soft Skills':       { bg: '#0891B2', badge: '#ECFEFF', badgeTxt: '#0E7490', init: 'SS', img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=480&h=160&fit=crop&q=80' },
+  '1st Time Managers': { bg: '#BE185D', badge: '#FDF2F8', badgeTxt: '#9D174D', init: 'M',  img: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=480&h=160&fit=crop&q=80' },
+  'Vedic Wisdom':      { bg: '#92400E', badge: '#FEF3C7', badgeTxt: '#78350F', init: 'V',  img: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=480&h=160&fit=crop&q=80' },
+  'General':           { bg: '#374151', badge: '#F9FAFB', badgeTxt: '#374151', init: 'G',  img: 'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=480&h=160&fit=crop&q=80' },
 };
 
 function catColor(c) { return CAT_COLORS[c] || CAT_COLORS['General']; }
@@ -325,7 +325,8 @@ function collectionPage(collection, courses, base, expDate) {
     const meta = [course.language, dur].filter(Boolean).join(' · ');
     return `
     <div class="card">
-      <div class="stripe" style="background:${c.bg}">
+      <div class="stripe" style="background-image:url('${c.img}')">
+        <div class="stripe-overlay" style="background:${c.bg}"></div>
         <span class="init">${c.init}</span>
       </div>
       <div class="cbody">
@@ -349,11 +350,14 @@ function collectionPage(collection, courses, base, expDate) {
 <title>${esc(collection.clientName)} — CRAFT Academia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;min-height:100vh;display:flex;flex-direction:column}
 header{background:#fff;padding:0 32px;height:72px;display:flex;align-items:center;border-bottom:1px solid #E2E8F0;flex-shrink:0}
+.brand{display:flex;flex-direction:column;justify-content:center}
+.brand-main{font-size:22px;font-weight:800;color:#1B3A5C;letter-spacing:1.5px;line-height:1}
+.brand-sub{font-size:11px;font-weight:600;color:#F5A623;margin-top:3px;letter-spacing:.5px}
 main{flex:1;max-width:1000px;width:100%;margin:0 auto;padding:40px 24px 64px}
 .ch{margin-bottom:32px}
 .cl{font-size:11px;font-weight:700;color:#8098B3;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
@@ -361,11 +365,12 @@ main{flex:1;max-width:1000px;width:100%;margin:0 auto;padding:40px 24px 64px}
 .cnote{margin-top:14px;padding:14px 18px;background:#fff;border:1px solid #D1DCE8;border-left:4px solid #F5A623;border-radius:8px;font-size:14px;color:#334155;line-height:1.6}
 .cexp{margin-top:12px;font-size:12px;color:#8098B3;display:flex;align-items:center;gap:5px}
 .cc{font-size:13px;font-weight:500;color:#5C7A9B;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
 .card{background:#fff;border:1px solid #D1DCE8;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s,transform .15s}
 .card:hover{box-shadow:0 8px 28px rgba(27,58,92,.14);transform:translateY(-2px)}
-.stripe{height:72px;display:flex;align-items:center;padding:0 20px;flex-shrink:0}
-.init{font-size:24px;font-weight:700;color:rgba(255,255,255,.88)}
+.stripe{height:160px;display:flex;align-items:flex-end;padding:0 20px 16px;flex-shrink:0;position:relative;background-size:cover;background-position:center}
+.stripe-overlay{position:absolute;inset:0;opacity:0.62}
+.init{position:relative;z-index:1;font-size:28px;font-weight:800;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,.3);letter-spacing:1px}
 .cbody{padding:18px 20px 22px;display:flex;flex-direction:column;flex:1;gap:9px}
 .badge{display:inline-block;font-size:11px;font-weight:600;border-radius:99px;padding:3px 10px;align-self:flex-start}
 .ctitle{font-size:15px;font-weight:600;color:#1B3A5C;line-height:1.35}
@@ -379,7 +384,12 @@ footer strong{color:rgba(255,255,255,.65)}
 </style>
 </head>
 <body>
-<header><img src="/Craft.png" alt="CRAFT Academia" style="height:44px"/></header>
+<header>
+  <div class="brand">
+    <div class="brand-main">C.R.A.F.T</div>
+    <div class="brand-sub">Inspiring Transformation</div>
+  </div>
+</header>
 <main>
   <div class="ch">
     <div class="cl">Course Collection</div>
